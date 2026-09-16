@@ -7,8 +7,6 @@ document.querySelector('#motion-toggle').addEventListener('click', e => { const 
 let scrollFrame;
 window.addEventListener('scroll',()=>{if(reducedMotion.matches || scrollFrame) return;scrollFrame=requestAnimationFrame(()=>{document.documentElement.style.setProperty('--scroll',Math.min(window.scrollY/700,1));scrollFrame=null;});},{passive:true});
 
-// The preview never sends or persists application data. The production endpoint
-// and consent audit trail will be added with the Russian-hosted backend.
 const form = document.querySelector('#lead-form');
 const brandOptions = form.elements.brand;
 const phone = document.querySelector('#phone');
@@ -47,18 +45,40 @@ phone.addEventListener('blur', () => {
 phone.addEventListener('input',()=>{phone.removeAttribute('aria-invalid');document.querySelector('#phone-error').textContent='';clearStatus();});
 consent.addEventListener('change',()=>{consent.removeAttribute('aria-invalid');document.querySelector('#consent-error').textContent='';clearStatus();});
 form.addEventListener('input',clearStatus);
-form.addEventListener('submit',event=>{
+let submitting = false;
+let pendingRequest = null;
+form.addEventListener('submit',async event=>{
   event.preventDefault();clearStatus();
+  if (submitting) return;
   let firstInvalid = null;
   if(!normalizePhone(phone.value)) {phone.setAttribute('aria-invalid','true');document.querySelector('#phone-error').textContent='Введите российский номер: +7 и ещё 10 цифр.';firstInvalid=phone;}
   if(!consent.checked) {consent.setAttribute('aria-invalid','true');document.querySelector('#consent-error').textContent='Для заявки нужно ваше согласие на обработку данных.';firstInvalid ??= consent;}
   if(firstInvalid) {firstInvalid.focus();return;}
   if(form.elements.website.value) return;
-  status.hidden=false;
-  const chosen = `${form.elements.service.value}; ${brandOptions.value === 'Пока не знаю' ? 'бренд уточним при разговоре' : brandOptions.value}`;
-  const message=document.createElement('p');message.textContent=`Всё заполнено. Ваш выбор: ${chosen}. Это предварительный просмотр: заявка не отправлена, данные не сохранены. Сейчас можно связаться с нами по телефону.`;
-  const link=document.createElement('a');link.href='tel:+79934199954';link.textContent='+7 993 419-99-54';
-  status.replaceChildren(message,link);status.focus({preventScroll:true});
+  const payload = {name:form.elements.name.value.trim(),phone:normalizePhone(phone.value),service:form.elements.service.value,brand:brandOptions.value,comment:form.elements.comment.value.trim(),consent:true,website:''};
+  const signature = JSON.stringify(payload);
+  if (!pendingRequest || pendingRequest.signature !== signature) pendingRequest = {signature,id:crypto.randomUUID()};
+  const submit = form.querySelector('[type="submit"]');
+  submitting=true;submit.disabled=true;form.setAttribute('aria-busy','true');
+  submit.querySelector('.submit-text').textContent='Отправляем…';
+  // Keep a timed-out request ID for a safe retry: the server will not duplicate it.
+  try {
+    const session = await fetch('/api/session.php', {credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(12000)});
+    if (!session.ok) throw new Error('Не удалось соединиться. Попробуйте ещё раз или позвоните нам.');
+    const {csrf} = await session.json();
+    const response = await fetch('/api/lead.php', {method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify({...payload,requestId:pendingRequest.id}),signal:AbortSignal.timeout(25000)});
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || 'Не удалось подтвердить приём заявки. Попробуйте ещё раз.');
+    status.textContent='Заявка принята! Свяжемся с вами по указанному телефону и обсудим детали.';
+    form.reset();updateBrandStatus();pendingRequest=null;
+  } catch (error) {
+    status.textContent=error.name === 'TimeoutError' || error.name === 'TypeError' || error.name === 'SyntaxError'
+      ? 'Не удалось подтвердить приём заявки. Повторите отправку или позвоните: +7 993 419-99-54.' : error.message;
+  } finally {
+    submitting=false;submit.disabled=false;form.removeAttribute('aria-busy');
+    submit.querySelector('.submit-text').textContent='Отправить заявку';
+    status.hidden=false;status.focus({preventScroll:true});
+  }
 });
 
 const gallery = document.querySelector('#work-gallery');

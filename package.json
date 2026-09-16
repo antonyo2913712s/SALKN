@@ -3,5 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": { "dev": "node scripts/serve.mjs", "check": "node --check dist/app.js && node --check scripts/serve.mjs" }
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "check": "node --check dist/app.js && node --check scripts/serve.mjs && node --check scripts/local-config.mjs && node --check scripts/hosting-askpass.mjs && node --check scripts/check-connections.mjs && node --check scripts/hosting.mjs && node --check scripts/panel.mjs && node --check scripts/configure-domains.mjs && node --check scripts/deploy.mjs && node --check scripts/verify-live.mjs && node --check scripts/status.mjs",
+    "verify:live": "node scripts/verify-live.mjs",
+    "hosting:status": "node scripts/status.mjs"
+  }
 }

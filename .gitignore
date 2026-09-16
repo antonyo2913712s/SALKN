@@ -4,6 +4,7 @@ node_modules/
 .env.*
 !.env.example
 .sites-runtime/
+.local/
 # Private keys and local access files must never enter the repository.
 *.pem
 *.key

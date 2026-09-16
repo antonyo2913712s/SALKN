@@ -4,7 +4,7 @@ import { resolve, extname, sep } from 'node:path';
 const root = resolve('dist');
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.txt': 'text/plain', '.json': 'application/json' };
 http.createServer(async (req, res) => {
-  if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(503, {'Content-Type': 'application/json'}); res.end(JSON.stringify({error: 'Приём заявок ещё не подключён.'})); return; }
+  if (req.method !== 'GET' && req.method !== 'HEAD' || req.url.startsWith('/api/')) { res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'}); res.end(JSON.stringify({error: 'В локальном предпросмотре отправка недоступна. Рабочая форма — на salkn.ru.'})); return; }
   try {
     const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     const file = resolve(root, '.' + (pathname.endsWith('/') ? pathname + 'index.html' : pathname));
