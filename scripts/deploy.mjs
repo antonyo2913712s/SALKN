@@ -35,9 +35,14 @@ try {
     console.log('Private backend prepared; credentials never uploaded to the public directory.');
   } else {
     const staging = `${privateDir}/release-${stamp}`;
+    const backendStaging = `${privateDir}/backend-${stamp}`;
     console.log(await runRemote(`set -e; umask 077; mkdir -p ${privateDir}/backups ${staging}; tar -czf ${privateDir}/backups/public-${stamp}.tar.gz -C ${home}/www salkn.ru salkn.online; tar -xzf - -C ${staging}`, archive('dist', 'public.tar.gz')));
+    // Keep PHP application code outside the public release; preserve the existing private config.
+    await runRemote(`set -e; umask 077; mkdir -p ${backendStaging}; tar -xzf - -C ${backendStaging}`, archive('server', 'backend.tar.gz'));
     // Validate the uploaded code before replacing the public page.
-    console.log(await runRemote(`set -e; for f in ${staging}/api/*.php; do /opt/php/8.3/bin/php -l "$f"; done; /opt/php/8.3/bin/php ${privateDir}/migrate.php; chmod -R u=rwX,go=rX ${staging}; cp -R ${staging}/. ${home}/www/salkn.ru/; chmod 755 ${home}/www/salkn.ru; cp ${staging}/.htaccess ${home}/www/salkn.online/.htaccess`));
+    console.log(await runRemote(`set -e; for f in ${staging}/api/*.php ${backendStaging}/*.php; do /opt/php/8.3/bin/php -l "$f"; done`));
+    await runRemote(`set -e; umask 077; tar -czf ${privateDir}/backups/backend-${stamp}.tar.gz -C ${privateDir} app.php migrate.php worker.php; for f in app.php migrate.php worker.php; do cp ${backendStaging}/"$f" ${privateDir}/"$f".new; chmod 600 ${privateDir}/"$f".new; mv ${privateDir}/"$f".new ${privateDir}/"$f"; done`);
+    console.log(await runRemote(`set -e; /opt/php/8.3/bin/php ${privateDir}/migrate.php; chmod -R u=rwX,go=rX ${staging}; cp -R ${staging}/. ${home}/www/salkn.ru/; chmod 755 ${home}/www/salkn.ru; cp ${staging}/.htaccess ${home}/www/salkn.online/.htaccess`));
     const cronLine = `* * * * * /opt/php/8.3/bin/php ${privateDir}/worker.php >> ${privateDir}/worker.log 2>&1`;
     const installCron = `<?php
       $file = '${privateDir}/crontab.new';

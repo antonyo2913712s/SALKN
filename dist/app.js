@@ -1,4 +1,5 @@
 import { attachPhoneMask, normalizePhone } from './phone-mask.js?v=20260919-1';
+import { attachTextFields } from './form-fields.js?v=20260919-1';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const menuButton = document.querySelector('.menu-toggle');
@@ -35,6 +36,7 @@ form.elements.service.forEach(radio => radio.addEventListener('change', () => {s
 brandOptions.forEach(radio => radio.addEventListener('change', () => {updateBrandStatus();clearStatus();}));
 
 attachPhoneMask(phone);
+const textFields = attachTextFields(form);
 phone.addEventListener('input',()=>{phone.removeAttribute('aria-invalid');document.querySelector('#phone-error').textContent='';clearStatus();});
 consent.addEventListener('change',()=>{consent.removeAttribute('aria-invalid');document.querySelector('#consent-error').textContent='';clearStatus();});
 form.addEventListener('input',clearStatus);
@@ -43,8 +45,8 @@ let pendingRequest = null;
 form.addEventListener('submit',async event=>{
   event.preventDefault();clearStatus();
   if (submitting) return;
-  let firstInvalid = null;
-  if(!normalizePhone(phone.value)) {phone.setAttribute('aria-invalid','true');document.querySelector('#phone-error').textContent='Введите 10 цифр номера после +7.';firstInvalid=phone;}
+  let firstInvalid = textFields.validate();
+  if(!normalizePhone(phone.value)) {phone.setAttribute('aria-invalid','true');document.querySelector('#phone-error').textContent='Введите 10 цифр номера после +7.';firstInvalid ??= phone;}
   if(!consent.checked) {consent.setAttribute('aria-invalid','true');document.querySelector('#consent-error').textContent='Для заявки нужно ваше согласие на обработку данных.';firstInvalid ??= consent;}
   if(firstInvalid) {firstInvalid.focus();return;}
   if(form.elements.website.value) return;

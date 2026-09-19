@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check dist/app.js && node --check dist/phone-mask.js && node --check scripts/serve.mjs && node --check scripts/local-config.mjs && node --check scripts/hosting-askpass.mjs && node --check scripts/check-connections.mjs && node --check scripts/hosting.mjs && node --check scripts/panel.mjs && node --check scripts/configure-domains.mjs && node --check scripts/deploy.mjs && node --check scripts/verify-live.mjs && node --check scripts/status.mjs",
+    "test:server": "node scripts/test-server.mjs",
+    "check": "node --check dist/app.js && node --check dist/phone-mask.js && node --check dist/form-fields.js && node --check scripts/serve.mjs && node --check scripts/local-config.mjs && node --check scripts/hosting-askpass.mjs && node --check scripts/check-connections.mjs && node --check scripts/hosting.mjs && node --check scripts/panel.mjs && node --check scripts/configure-domains.mjs && node --check scripts/deploy.mjs && node --check scripts/verify-live.mjs && node --check scripts/status.mjs && node --check scripts/test-server.mjs",
     "verify:live": "node scripts/verify-live.mjs",
     "hosting:status": "node scripts/status.mjs"
   }

@@ -62,11 +62,12 @@ function cleanText(mixed $value, int $limit): string {
 
 function validateLead(array $input): array {
     $data = [
-        'name' => cleanText($input['name'] ?? '', 80), 'phone' => cleanText($input['phone'] ?? '', 24),
+        'name' => cleanText($input['name'] ?? '', 60), 'phone' => cleanText($input['phone'] ?? '', 24),
         'service' => cleanText($input['service'] ?? '', 60), 'brand' => cleanText($input['brand'] ?? '', 30),
         'comment' => cleanText($input['comment'] ?? '', 1000),
     ];
-    if (!preg_match('/^\+7[0-9]{10}$/D', $data['phone']) ||
+    $nameValid = $data['name'] === '' || (preg_match("/^[\p{L}\p{M} '’ʼ-]+$/uD", $data['name']) && preg_match('/\p{L}/u', $data['name']));
+    if (!$nameValid || !preg_match('/^\+7[0-9]{10}$/D', $data['phone']) ||
         !in_array($data['service'], ['Кондиционер + установка', 'Только установка', 'Помогите выбрать'], true) ||
         !in_array($data['brand'], ['FUNAI', 'GREE', 'Kentatsu', 'Пока не знаю'], true) ||
         ($input['consent'] ?? false) !== true || ($input['website'] ?? '') !== '') throw new InvalidArgumentException();
@@ -86,7 +87,7 @@ function acceptLead(): never {
         $input = json_decode($raw, true, 16, JSON_THROW_ON_ERROR);
         if (!is_array($input)) throw new InvalidArgumentException();
         ['id' => $id, 'data' => $data] = validateLead($input);
-    } catch (JsonException | InvalidArgumentException $e) { respond(422, ['error' => 'Проверьте телефон, выбранную услугу и согласие на обработку данных.']); }
+    } catch (JsonException | InvalidArgumentException $e) { respond(422, ['error' => 'Проверьте поля формы и согласие на обработку данных.']); }
     $payloadHash = hash('sha256', json_encode($data, JSON_UNESCAPED_UNICODE) . SALKN_CONSENT_VERSION);
     $pdo = db();
     $find = $pdo->prepare('SELECT payload_hash FROM salkn_leads WHERE id = ?');
