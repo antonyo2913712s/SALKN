@@ -1,3 +1,5 @@
+import { attachPhoneMask, normalizePhone } from './phone-mask.js?v=20260919-1';
+
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const menuButton = document.querySelector('.menu-toggle');
 const mobileNav = document.querySelector('#mobile-nav');
@@ -32,16 +34,7 @@ document.querySelectorAll('[data-service]').forEach(link => link.addEventListene
 form.elements.service.forEach(radio => radio.addEventListener('change', () => {setService(radio.value);clearStatus();}));
 brandOptions.forEach(radio => radio.addEventListener('change', () => {updateBrandStatus();clearStatus();}));
 
-function normalizePhone(value) {
-  let digits = value.replace(/\D/g,'');
-  if (digits.length === 10 && digits[0] === '9') digits = '7' + digits;
-  if (digits.length === 11 && digits[0] === '8') digits = '7' + digits.slice(1);
-  return /^7\d{10}$/.test(digits) ? '+' + digits : null;
-}
-phone.addEventListener('blur', () => {
-  const normalized = normalizePhone(phone.value);
-  if (normalized) phone.value = normalized.replace(/\+7(\d{3})(\d{3})(\d{2})(\d{2})/, '+7 ($1) $2-$3-$4');
-});
+attachPhoneMask(phone);
 phone.addEventListener('input',()=>{phone.removeAttribute('aria-invalid');document.querySelector('#phone-error').textContent='';clearStatus();});
 consent.addEventListener('change',()=>{consent.removeAttribute('aria-invalid');document.querySelector('#consent-error').textContent='';clearStatus();});
 form.addEventListener('input',clearStatus);
@@ -51,7 +44,7 @@ form.addEventListener('submit',async event=>{
   event.preventDefault();clearStatus();
   if (submitting) return;
   let firstInvalid = null;
-  if(!normalizePhone(phone.value)) {phone.setAttribute('aria-invalid','true');document.querySelector('#phone-error').textContent='Введите российский номер: +7 и ещё 10 цифр.';firstInvalid=phone;}
+  if(!normalizePhone(phone.value)) {phone.setAttribute('aria-invalid','true');document.querySelector('#phone-error').textContent='Введите 10 цифр номера после +7.';firstInvalid=phone;}
   if(!consent.checked) {consent.setAttribute('aria-invalid','true');document.querySelector('#consent-error').textContent='Для заявки нужно ваше согласие на обработку данных.';firstInvalid ??= consent;}
   if(firstInvalid) {firstInvalid.focus();return;}
   if(form.elements.website.value) return;

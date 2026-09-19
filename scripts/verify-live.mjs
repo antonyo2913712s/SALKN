@@ -21,7 +21,7 @@ assert.equal((html.match(/<h1[\s>]/g) || []).length, 1);
 const data = JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
 assert.equal(data.url, origin + '/');
 assert.equal(data.areaServed.name, 'Казань');
-for (const path of ['/privacy.html', '/consent.html', '/robots.txt', '/sitemap.xml', '/app.js?v=20260916-1', '/styles.css', '/assets/salkn-logo.png']) {
+for (const path of ['/privacy.html', '/consent.html', '/robots.txt', '/sitemap.xml', '/app.js?v=20260919-1', '/phone-mask.js?v=20260919-1', '/styles.css', '/assets/salkn-logo.png']) {
   const r = await request(path); assert.equal(r.status, 200, path);
 }
 const robots = await (await request('/robots.txt')).text();
@@ -41,7 +41,7 @@ const { csrf } = await session.json();
 const headers = {'Content-Type':'application/json',Origin:origin,Cookie:cookie.split(';')[0],'X-CSRF-Token':csrf};
 const payload = {requestId:randomUUID(),name:'Техническая проверка SALKN',phone:'+79990000000',service:'Кондиционер + установка',brand:'FUNAI',comment:'Тест запуска сайта. Не звонить. Проверяем сохранение заявки и доставку двум получателям.',consent:true,website:''};
 const post = (value, override = {}) => request('/api/lead.php',{method:'POST',headers:{...headers,...override},body:JSON.stringify(value)});
-for (const [label, value] of [['consent',{...payload,consent:false}],['phone',{...payload,phone:'invalid'}],['brand',{...payload,brand:'Unknown'}],['honeypot',{...payload,website:'spam'}],['comment length',{...payload,comment:'x'.repeat(1001)}]]) {
+for (const [label, value] of [['consent',{...payload,consent:false}],['phone',{...payload,phone:'invalid'}],['phone too long',{...payload,phone:'+7999123456789'}],['phone incomplete',{...payload,phone:'+7999123456'}],['brand',{...payload,brand:'Unknown'}],['honeypot',{...payload,website:'spam'}],['comment length',{...payload,comment:'x'.repeat(1001)}]]) {
   assert.equal((await post(value)).status,422,label);
 }
 assert.equal((await post(payload,{'X-CSRF-Token':'invalid'})).status,403,'CSRF');
